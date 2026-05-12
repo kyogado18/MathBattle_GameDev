@@ -6,15 +6,18 @@ class BattleSystem:
         self.enemy_health = 100
         self.player_attack = 20
         self.enemy_attack = 15
+        self.round = 0
+        self.max_rounds = 5
     
     def player_attack_enemy(self, correct):
         if correct:
             damage = self.player_attack
         else:
-            damage = self.player_attack // 2  # Half damage for wrong answer
+            damage = self.player_attack // 2
         self.enemy_health -= damage
         if self.enemy_health < 0:
             self.enemy_health = 0
+        self.round += 1
     
     def enemy_attack_player(self):
         self.player_health -= self.enemy_attack

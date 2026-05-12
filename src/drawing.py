@@ -11,27 +11,30 @@ class DrawingCanvas:
         self.drawing = False
         self.last_pos = None
     
-    def handle_event(self, event):
+    def is_inside(self, pos, offset_x, offset_y):
+        x, y = pos
+        return offset_x <= x < offset_x + self.width and offset_y <= y < offset_y + self.height
+    
+    def handle_event(self, event, offset_x, offset_y):
         if event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1:  # Left click
+            if event.button == 1 and self.is_inside(event.pos, offset_x, offset_y):
                 self.drawing = True
                 self.last_pos = event.pos
         elif event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1:
                 self.drawing = False
                 self.last_pos = None
-        elif event.type == pygame.MOUSEMOTION:
-            if self.drawing:
-                # Adjust mouse position relative to canvas position
-                mouse_x, mouse_y = event.pos
-                canvas_x = mouse_x - 200  # Assuming canvas is drawn at 200, 150
-                canvas_y = mouse_y - 150
-                if 0 <= canvas_x < self.width and 0 <= canvas_y < self.height:
-                    if self.last_pos:
-                        last_x = self.last_pos[0] - 200
-                        last_y = self.last_pos[1] - 150
-                        pygame.draw.line(self.surface, (0, 0, 0), (last_x, last_y), (canvas_x, canvas_y), 5)
-                    self.last_pos = event.pos
+        elif event.type == pygame.MOUSEMOTION and self.drawing:
+            if self.is_inside(event.pos, offset_x, offset_y):
+                if self.last_pos and self.is_inside(self.last_pos, offset_x, offset_y):
+                    last_x = self.last_pos[0] - offset_x
+                    last_y = self.last_pos[1] - offset_y
+                    current_x = event.pos[0] - offset_x
+                    current_y = event.pos[1] - offset_y
+                    pygame.draw.line(self.surface, (0, 0, 0), (last_x, last_y), (current_x, current_y), 5)
+                self.last_pos = event.pos
+            else:
+                self.last_pos = None
     
     def update(self):
         pass
@@ -43,13 +46,10 @@ class DrawingCanvas:
         self.surface.fill((255, 255, 255))
     
     def get_image(self):
-        # Convert pygame surface to PIL Image
         string_image = pygame.image.tostring(self.surface, 'RGB')
         pil_image = Image.frombytes('RGB', (self.width, self.height), string_image)
-        # Convert to grayscale and resize to 28x28 for MNIST
         pil_image = pil_image.convert('L')
         pil_image = pil_image.resize((28, 28), Image.Resampling.LANCZOS)
-        # Invert colors (white background to black)
         pil_image = Image.eval(pil_image, lambda x: 255 - x)
         return pil_image
     

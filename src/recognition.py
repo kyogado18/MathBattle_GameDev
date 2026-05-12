@@ -1,74 +1,61 @@
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
+import os
+import cv2
 import numpy as np
-
-class Net(nn.Module):
-    def __init__(self):
-        super(Net, self).__init__()
-        self.conv1 = nn.Conv2d(1, 32, 3, 1)
-        self.conv2 = nn.Conv2d(32, 64, 3, 1)
-        self.dropout1 = nn.Dropout(0.25)
-        self.dropout2 = nn.Dropout(0.5)
-        self.fc1 = nn.Linear(9216, 128)
-        self.fc2 = nn.Linear(128, 10)
-
-    def forward(self, x):
-        x = self.conv1(x)
-        x = F.relu(x)
-        x = self.conv2(x)
-        x = F.relu(x)
-        x = F.max_pool2d(x, 2)
-        x = self.dropout1(x)
-        x = torch.flatten(x, 1)
-        x = self.fc1(x)
-        x = F.relu(x)
-        x = self.dropout2(x)
-        x = self.fc2(x)
-        output = F.log_softmax(x, dim=1)
-        return output
+import tensorflow as tf
+from tensorflow import keras
 
 class DigitRecognizer:
     def __init__(self):
-        self.model = Net()
-        try:
-            self.model.load_state_dict(torch.load('assets/mnist_model.pth'))
-            self.model.eval()
-        except:
-            print("Training model...")
+        self.model_path = 'assets/mnist_model.weights.h5'
+        self.model = self.build_model()
+        if os.path.exists(self.model_path):
+            self.model.load_weights(self.model_path)
+        else:
+            print("Training TensorFlow MNIST model...")
             self.train_model()
+        self.model.trainable = False
+    
+    def build_model(self):
+        model = keras.Sequential([
+            keras.layers.Input(shape=(28, 28, 1)),
+            keras.layers.Conv2D(32, (3, 3), activation='relu'),
+            keras.layers.MaxPooling2D((2, 2)),
+            keras.layers.Conv2D(64, (3, 3), activation='relu'),
+            keras.layers.MaxPooling2D((2, 2)),
+            keras.layers.Flatten(),
+            keras.layers.Dense(128, activation='relu'),
+            keras.layers.Dense(10, activation='softmax')
+        ])
+        model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+        return model
     
     def train_model(self):
-        import torchvision
-        import torchvision.transforms as transforms
-        
-        transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize((0.1307,), (0.3081,))
-        ])
-        
-        trainset = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=transform)
-        trainloader = torch.utils.data.DataLoader(trainset, batch_size=64, shuffle=True)
-        
-        criterion = nn.CrossEntropyLoss()
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=0.001)
-        
-        for epoch in range(2):  # Train for 2 epochs for demo
-            for data in trainloader:
-                inputs, labels = data
-                optimizer.zero_grad()
-                outputs = self.model(inputs)
-                loss = criterion(outputs, labels)
-                loss.backward()
-                optimizer.step()
-        
-        torch.save(self.model.state_dict(), 'assets/mnist_model.pth')
+        (x_train, y_train), _ = keras.datasets.mnist.load_data()
+        x_train = x_train.astype('float32') / 255.0
+        x_train = np.expand_dims(x_train, axis=-1)
+        self.model.fit(x_train, y_train, epochs=5, batch_size=64)
+        self.model.save_weights(self.model_path)
+    
+    def preprocess_image(self, image_array):
+        image = image_array[0, :, :, 0]
+        image = (image * 255).astype('uint8')
+        blurred = cv2.GaussianBlur(image, (3, 3), 0)
+        _, thresh = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        thresh = cv2.bitwise_not(thresh)
+        resized = cv2.resize(thresh, (28, 28))
+        normalized = resized.astype('float32') / 255.0
+        normalized = normalized.reshape(1, 28, 28, 1)
+        return normalized
     
     def predict(self, image_array):
-        with torch.no_grad():
-            tensor = torch.from_numpy(image_array).float()
-            outputs = self.model(tensor)
-            _, predicted = torch.max(outputs, 1)
-            digit = predicted.item()
-            confidence = torch.softmax(outputs, dim=1)[0][digit].item()
+        try:
+            x = self.preprocess_image(image_array)
+            predictions = self.model.predict(x, verbose=0)
+            digit = int(np.argmax(predictions[0]))
+            confidence = float(np.max(predictions[0]))
             return digit, confidence
+        except Exception as e:
+            print(f"Error in predict: {e}")
+            import traceback
+            traceback.print_exc()
+            return 0, 0.0

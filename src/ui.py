@@ -193,3 +193,9 @@ class UI:
         screen.blit(result, (width // 2 - result.get_width() // 2, height // 3))
         screen.blit(msg, (width // 2 - msg.get_width() // 2, height // 2))
         screen.blit(continue_text, (width // 2 - continue_text.get_width() // 2, 2 * height // 3))
+        
+    def draw_redraw_prompt(self, screen, width, height):
+        text = self.font_medium.render(
+        "Can't read that! Please redraw clearly.", 
+        True, self.COLOR_ACCENT)
+        screen.blit(text, (width // 2 - text.get_width() // 2, height // 2))

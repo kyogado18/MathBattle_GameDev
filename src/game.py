@@ -106,16 +106,33 @@ class Game:
         self.player_answer = None
     
     def submit_answer(self):
+        # if self.recognizer is not None:
+        #     image_array = self.canvas.get_array()
+        #     result = self.recognizer.predict(image_array)
+        #     if result is None:
+        #         self.player_answer = 0
+        #         self.player_confidence = 0.0
+        #     else:
+        #         digit, confidence = result
+        #         self.player_answer = digit
+        #         self.player_confidence = confidence
+        #     correct = (self.player_answer == self.correct_answer)
+        # else:
+        #     correct = True
+        #     self.player_answer = self.correct_answer
+        #     self.player_confidence = 1.0
         if self.recognizer is not None:
             image_array = self.canvas.get_array()
             result = self.recognizer.predict(image_array)
-            if result is None:
-                self.player_answer = 0
-                self.player_confidence = 0.0
-            else:
-                digit, confidence = result
-                self.player_answer = digit
-                self.player_confidence = confidence
+            digit, confidence = result
+
+            # If confidence too low, ask to redraw
+            if digit is None:
+                self.show_redraw_prompt = True
+                return  # Don't submit yet
+
+            self.player_answer = digit
+            self.player_confidence = confidence
             correct = (self.player_answer == self.correct_answer)
         else:
             correct = True

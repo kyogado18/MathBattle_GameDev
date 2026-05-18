@@ -31,7 +31,7 @@ class DrawingCanvas:
                     last_y = self.last_pos[1] - offset_y
                     current_x = event.pos[0] - offset_x
                     current_y = event.pos[1] - offset_y
-                    pygame.draw.line(self.surface, (0, 0, 0), (last_x, last_y), (current_x, current_y), 5)
+                    pygame.draw.line(self.surface, (0, 0, 0), (last_x, last_y), (current_x, current_y), 4)
                 self.last_pos = event.pos
             else:
                 self.last_pos = None
@@ -49,13 +49,15 @@ class DrawingCanvas:
         string_image = pygame.image.tostring(self.surface, 'RGB')
         pil_image = Image.frombytes('RGB', (self.width, self.height), string_image)
         pil_image = pil_image.convert('L')
-        pil_image = pil_image.resize((28, 28), Image.Resampling.LANCZOS)
-        pil_image = Image.eval(pil_image, lambda x: 255 - x)
+        # pil_image = pil_image.resize((28, 28), Image.Resampling.LANCZOS)
+        # pil_image = Image.eval(pil_image, lambda x: 255 - x)
         return pil_image
     
     def get_array(self):
         img = self.get_image()
         array = np.array(img)
+        img.save("debug_input.png")
         array = array.astype('float32') / 255.0
-        array = array.reshape(1, 28, 28, 1)
+        # array = array.reshape(1, 28, 28, 1)
+        array = array.reshape(1, self.height, self.width, 1)
         return array

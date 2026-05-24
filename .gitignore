@@ -126,7 +126,6 @@ dmypy.json
 .pyre/
 
 # Game assets and data
-assets/
 data/
 
 # IDE

@@ -130,12 +130,20 @@ class UI:
         text = self.font_large.render(equation, True, self.COLOR_ACCENT)
         screen.blit(text, (width // 2 - text.get_width() // 2, 40))
     
-    def draw_canvas_container(self, screen, x, y, width, height):
+    def draw_canvas_container(self, screen, x, y, width, height, eraser_mode=False):
         """Draw a styled border around the canvas"""
-        pygame.draw.rect(screen, (100, 100, 120), (x - 10, y - 10, width + 20, height + 20))
-        pygame.draw.rect(screen, (255, 255, 255), (x - 10, y - 10, width + 20, height + 20), 4)
+        # pygame.draw.rect(screen, (100, 100, 120), (x - 10, y - 10, width + 20, height + 20))
+        # pygame.draw.rect(screen, (255, 255, 255), (x - 10, y - 10, width + 20, height + 20), 4)
         
-        label = self.font_tiny.render("DRAWING AREA", True, self.COLOR_ACCENT)
+        # label = self.font_tiny.render("DRAWING AREA", True, self.COLOR_ACCENT)
+        # screen.blit(label, (x + width // 2 - label.get_width() // 2, y - 40))
+
+        color = (255, 150, 50) if eraser_mode else (255, 255, 255)
+        pygame.draw.rect(screen, (100, 100, 120), (x - 10, y - 10, width + 20, height + 20))
+        pygame.draw.rect(screen, color, (x - 10, y - 10, width + 20, height + 20), 4)
+
+        mode_label = "ERASER MODE" if eraser_mode else "DRAWING AREA"
+        label = self.font_tiny.render(mode_label, True, self.COLOR_ACCENT)
         screen.blit(label, (x + width // 2 - label.get_width() // 2, y - 40))
     
     def draw_feedback(self, screen, player_answer, correct_answer, confidence, width):
@@ -161,14 +169,24 @@ class UI:
         screen.blit(round_text, (width - 350, 20))
     
     def draw_instructions(self, screen, width, height):
+        # instructions = [
+        #     "Draw the answer with your mouse",
+        #     "Press ENTER to submit",
+        #     "Press ESC to quit"
+        # ]
+        # for i, text in enumerate(instructions):
+        #     rendered = self.font_tiny.render(text, True, self.COLOR_PRIMARY)
+        #     screen.blit(rendered, (20, height - 100 + i * 30))
+
+        # Show eraser status
         instructions = [
-            "Draw the answer with your mouse",
-            "Press ENTER to submit",
-            "Press ESC to quit"
+            "Draw answer | ENTER to submit | ESC to exit",
+            "E = toggle eraser | C = clear canvas",
         ]
         for i, text in enumerate(instructions):
             rendered = self.font_tiny.render(text, True, self.COLOR_PRIMARY)
-            screen.blit(rendered, (20, height - 100 + i * 30))
+            screen.blit(rendered, (20, height - 70 + i * 30))
+        
     
     def draw_battle_result(self, screen, won, width, height):
         # Draw celebratory/sad overlay
@@ -199,3 +217,96 @@ class UI:
         "Can't read that! Please redraw clearly.", 
         True, self.COLOR_ACCENT)
         screen.blit(text, (width // 2 - text.get_width() // 2, height // 2))
+
+    def draw_input_select(self, screen, equation, width, height):
+        """Input method selection screen shown before every round"""
+        # Draw equation at top
+        self.draw_equation(screen, equation, width)
+
+        title = self.font_medium.render("Choose Input Method", True, self.COLOR_ACCENT)
+        screen.blit(title, (width // 2 - title.get_width() // 2, height // 3 - 60))
+
+        # Canvas button
+        canvas_rect = pygame.Rect(width // 2 - 220, height // 2 - 80, 200, 80)
+        pygame.draw.rect(screen, (40, 80, 120), canvas_rect, border_radius=12)
+        pygame.draw.rect(screen, self.COLOR_PLAYER, canvas_rect, 3, border_radius=12)
+        canvas_text = self.font_small.render("1. Drawing", True, self.COLOR_PLAYER)
+        canvas_sub = self.font_tiny.render("Use mouse/trackpad", True, self.COLOR_PRIMARY)
+        screen.blit(canvas_text, (canvas_rect.centerx - canvas_text.get_width() // 2, canvas_rect.y + 15))
+        screen.blit(canvas_sub, (canvas_rect.centerx - canvas_sub.get_width() // 2, canvas_rect.y + 48))
+
+        # Webcam button
+        webcam_rect = pygame.Rect(width // 2 + 20, height // 2 - 80, 200, 80)
+        pygame.draw.rect(screen, (40, 100, 60), webcam_rect, border_radius=12)
+        pygame.draw.rect(screen, self.COLOR_SUCCESS, webcam_rect, 3, border_radius=12)
+        webcam_text = self.font_small.render("2. Webcam", True, self.COLOR_SUCCESS)
+        webcam_sub = self.font_tiny.render("Hold up your answer", True, self.COLOR_PRIMARY)
+        screen.blit(webcam_text, (webcam_rect.centerx - webcam_text.get_width() // 2, webcam_rect.y + 15))
+        screen.blit(webcam_sub, (webcam_rect.centerx - webcam_sub.get_width() // 2, webcam_rect.y + 48))
+
+        hint = self.font_tiny.render("Click a button or press 1 / 2", True, self.COLOR_PRIMARY)
+        screen.blit(hint, (width // 2 - hint.get_width() // 2, height // 2 + 30))
+
+    def draw_webcam_instructions(self, screen, width, height):
+        # instructions = [
+        #     "Hold up your written answer inside the box",
+        #     "Press ENTER to capture",
+        #     "Press ESC to go back"
+        # ]
+        # for i, text in enumerate(instructions):
+        #     rendered = self.font_tiny.render(text, True, self.COLOR_PRIMARY)
+        #     screen.blit(rendered, (20, height - 100 + i * 30))
+
+        instructions = [
+        "Hold answer inside the yellow box | ENTER to capture",
+        "F = flip camera | ESC to go back",
+        ]
+        for i, text in enumerate(instructions):
+            rendered = self.font_tiny.render(text, True, self.COLOR_PRIMARY)
+            screen.blit(rendered, (20, height - 70 + i * 30))
+
+    def draw_webcam_warning(self, screen, correct, attempts, width, height):
+        """Low accuracy warning screen"""
+        accuracy = (correct / attempts * 100) if attempts > 0 else 0
+
+        # Dark overlay
+        overlay = pygame.Surface((width, height))
+        overlay.set_alpha(180)
+        overlay.fill((0, 0, 0))
+        screen.blit(overlay, (0, 0))
+
+        # Warning box
+        box_rect = pygame.Rect(width // 2 - 300, height // 2 - 150, 600, 300)
+        pygame.draw.rect(screen, (40, 30, 10), box_rect, border_radius=16)
+        pygame.draw.rect(screen, self.COLOR_ACCENT, box_rect, 3, border_radius=16)
+
+        title = self.font_medium.render("Low Accuracy Warning", True, self.COLOR_ACCENT)
+        screen.blit(title, (width // 2 - title.get_width() // 2, height // 2 - 130))
+
+        stat = self.font_small.render(
+            f"Webcam accuracy: {correct}/{attempts} ({accuracy:.0f}%)",
+            True, self.COLOR_FAIL
+        )
+        screen.blit(stat, (width // 2 - stat.get_width() // 2, height // 2 - 70))
+
+        suggestion = self.font_small.render(
+            "Consider switching to the drawing canvas.",
+            True, self.COLOR_PRIMARY
+        )
+        screen.blit(suggestion, (width // 2 - suggestion.get_width() // 2, height // 2 - 20))
+
+        enter_text = self.font_tiny.render(
+            "Press ENTER to switch to canvas", True, self.COLOR_SUCCESS
+        )
+        space_text = self.font_tiny.render(
+            "Press SPACE to continue with webcam anyway", True, (180, 180, 180)
+        )
+        screen.blit(enter_text, (width // 2 - enter_text.get_width() // 2, height // 2 + 50))
+        screen.blit(space_text, (width // 2 - space_text.get_width() // 2, height // 2 + 85))
+
+    def draw_redraw_prompt(self, screen, width, height):
+        text = self.font_medium.render(
+            "Can't read that! Please try again.",
+            True, self.COLOR_ACCENT
+        )
+        screen.blit(text, (width // 2 - text.get_width() // 2, height // 2 + 200))
